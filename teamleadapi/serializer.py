@@ -2,7 +2,7 @@ from rest_framework import serializers
 from hrapi.models import *
 
 class RegistrationSerializer(serializers.ModelSerializer):
-    id=serializers.CharField(read_only=True)
+    id = serializers.CharField(read_only=True)
     password=serializers.CharField(write_only=True)
 
     class Meta:

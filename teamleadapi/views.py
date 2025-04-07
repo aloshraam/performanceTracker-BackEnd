@@ -16,14 +16,29 @@ from hrapi.models import *
 from teamleadapi.serializer import *
 
 
+# class TeamleadCreateView(APIView):
+#     def post(self,request,*args,**kwargs):
+#         serializer=RegistrationSerializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save(user_type="teamlead")
+#             return Response(data=serializer.data)
+#         else:
+#             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+from rest_framework.permissions import AllowAny
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+
 class TeamleadCreateView(APIView):
-    def post(self,request,*args,**kwargs):
-        serializer=RegistrationSerializer(data=request.data)
+    permission_classes = [AllowAny]  # 👈 Required to bypass authentication
+
+    def post(self, request, *args, **kwargs):
+        serializer = RegistrationSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user_type="teamlead")
-            return Response(data=serializer.data)
-        else:
-            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(data=serializer.data, status=status.HTTP_201_CREATED)
+        return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
  
  
 class CustomAuthToken(ObtainAuthToken):

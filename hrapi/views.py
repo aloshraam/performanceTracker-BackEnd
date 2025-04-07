@@ -15,18 +15,32 @@ from django.db import IntegrityError
 
 
 from hrapi.models import Hr,Teams,TeamLead,TaskUpdateChart,TaskChart,Employee,Projects,ProjectDetail,Project_assign,Performance_assign,ProjectUpdates,Meeting
-# from hrapi.serializer import RegistrationSerializer,EmployeeSerializer,TeamleadSerializer,TeamsSerializer,ProjectSerializer,ProjectAssignSerializer,ProjectDetailSerializer,TaskChartSerializer,TaskUpdatesChartSerializer,PerformanceTrackSerializer,PerformanceTrackViewSerializer,ProjectUpdatesSerializer
+from hrapi.serializer import RegistrationSerializer,EmployeeSerializer,TeamleadSerializer,TeamsSerializer,ProjectSerializer,ProjectAssignSerializer,ProjectDetailSerializer,TaskChartSerializer,TaskUpdatesChartSerializer,PerformanceTrackSerializer,PerformanceTrackViewSerializer,ProjectUpdatesSerializer
 from hrapi.serializer import *
 
+# class HrCreateView(APIView):
+#     def post(self,request,*args,**kwargs):
+#         serializer=RegistrationSerializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save(user_type="hr")
+#             return Response(data=serializer.data)
+#         else:
+#             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+from rest_framework.permissions import AllowAny
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+
 class HrCreateView(APIView):
-    def post(self,request,*args,**kwargs):
-        serializer=RegistrationSerializer(data=request.data)
+    permission_classes = [AllowAny]  # 👈 This is the key fix
+
+    def post(self, request, *args, **kwargs):
+        serializer = RegistrationSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user_type="hr")
-            return Response(data=serializer.data)
-        else:
-            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+            return Response(data=serializer.data, status=status.HTTP_201_CREATED)
+        return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)        
 
 class CustomAuthToken(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
