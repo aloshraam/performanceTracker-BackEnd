@@ -232,21 +232,72 @@ class TaskUpdatesView(ViewSet):
         return Response(data=serializer.data)   
     
     
-class MyMeetingsView(ViewSet):
-    authentication_classes=[authentication.TokenAuthentication]
-    permission_classes=[permissions.IsAuthenticated]
+# class MyMeetingsView(ViewSet):
+#     authentication_classes=[authentication.TokenAuthentication]
+#     permission_classes=[permissions.IsAuthenticated]
 
     
-    def list(self,request,*args,**kwargs):
-        qs=Meeting.objects.all()
-        serializer=MeetingListSerializer(qs,many=True)
-        return Response(data=serializer.data)
+#     def list(self,request,*args,**kwargs):
+#         qs=Meeting.objects.all()
+#         serializer=MeetingListSerializer(qs,many=True)
+#         return Response(data=serializer.data)
     
-    def retrieve(self,request,*args,**kwargs):
-        id=kwargs.get("pk")
-        qs=Meeting.objects.get(id=id)
-        serializer=MeetingListSerializer(qs)
+#     def retrieve(self,request,*args,**kwargs):
+#         id=kwargs.get("pk")
+#         qs=Meeting.objects.get(id=id)
+#         serializer=MeetingListSerializer(qs)
+#         return Response(data=serializer.data)
+    
+class MyMeetingsView(ViewSet):
+    authentication_classes = [authentication.TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        user = request.user
+        
+        # Make sure this view is only used by employees
+        if user.user_type != "employee":
+            return Response({"error": "Only employees can access this view"}, status=status.HTTP_403_FORBIDDEN)
+
+        # Get employee's teamlead
+        try:
+            team = Teams.objects.get(members=user)
+            teamlead_username = team.teamlead.username
+        except Teams.DoesNotExist:
+            teamlead_username = None
+
+        # Filter meetings organized by the employee's teamlead or admin
+        qs = Meeting.objects.filter(
+            models.Q(organizer=teamlead_username) | models.Q(organizer="admin")
+        )
+
+        serializer = MeetingListSerializer(qs, many=True)
         return Response(data=serializer.data)
+
+    def retrieve(self, request, *args, **kwargs):
+        user = request.user
+
+        # Get teamlead
+        try:
+            team = Teams.objects.get(members=user)
+            teamlead_username = team.teamlead.username
+        except Teams.DoesNotExist:
+            teamlead_username = None
+
+        # Get the meeting
+        id = kwargs.get("pk")
+        try:
+            meeting = Meeting.objects.get(id=id)
+
+            # Check if the meeting is allowed to be viewed
+            if meeting.organizer == "admin" or meeting.organizer == teamlead_username:
+                serializer = MeetingListSerializer(meeting)
+                return Response(data=serializer.data)
+            else:
+                return Response({"error": "You are not authorized to view this meeting."}, status=status.HTTP_403_FORBIDDEN)
+
+        except Meeting.DoesNotExist:
+            return Response({"error": "Meeting not found."}, status=status.HTTP_404_NOT_FOUND)
     
     
 class profileView(APIView):

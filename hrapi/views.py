@@ -15,32 +15,18 @@ from django.db import IntegrityError
 
 
 from hrapi.models import Hr,Teams,TeamLead,TaskUpdateChart,TaskChart,Employee,Projects,ProjectDetail,Project_assign,Performance_assign,ProjectUpdates,Meeting
-from hrapi.serializer import RegistrationSerializer,EmployeeSerializer,TeamleadSerializer,TeamsSerializer,ProjectSerializer,ProjectAssignSerializer,ProjectDetailSerializer,TaskChartSerializer,TaskUpdatesChartSerializer,PerformanceTrackSerializer,PerformanceTrackViewSerializer,ProjectUpdatesSerializer
+# from hrapi.serializer import RegistrationSerializer,EmployeeSerializer,TeamleadSerializer,TeamsSerializer,ProjectSerializer,ProjectAssignSerializer,ProjectDetailSerializer,TaskChartSerializer,TaskUpdatesChartSerializer,PerformanceTrackSerializer,PerformanceTrackViewSerializer,ProjectUpdatesSerializer
 from hrapi.serializer import *
 
-# class HrCreateView(APIView):
-#     def post(self,request,*args,**kwargs):
-#         serializer=RegistrationSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save(user_type="hr")
-#             return Response(data=serializer.data)
-#         else:
-#             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-from rest_framework.permissions import AllowAny
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-
 class HrCreateView(APIView):
-    permission_classes = [AllowAny]  # 👈 This is the key fix
-
-    def post(self, request, *args, **kwargs):
-        serializer = RegistrationSerializer(data=request.data)
+    def post(self,request,*args,**kwargs):
+        serializer=RegistrationSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user_type="hr")
-            return Response(data=serializer.data, status=status.HTTP_201_CREATED)
-        return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)        
+            return Response(data=serializer.data)
+        else:
+            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
 
 class CustomAuthToken(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
@@ -327,34 +313,107 @@ class PerformancelistView(ViewSet):
     
     
 
-class MeetingView(ViewSet):
-    authentication_classes=[authentication.TokenAuthentication]
-    permission_classes=[permissions.IsAuthenticated]
+# class MeetingView(ViewSet):
+#     authentication_classes=[authentication.TokenAuthentication]
+#     permission_classes=[permissions.IsAuthenticated]
     
-    def create(self,request,*args,**kwargs):
-        serializer=MeetingSerializer(data=request.data)
-        user_id=request.user.username
+#     # def create(self,request,*args,**kwargs):
+#     #     serializer=MeetingSerializer(data=request.data)
+#     #     user_id=request.user.username
+#     #     if serializer.is_valid():
+#     #         serializer.save(organizer=user_id)
+#     #         return Response(data=serializer.data)
+#     #     else:
+#     #         return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#     def create(self, request, *args, **kwargs):
+#         serializer = MeetingSerializer(data=request.data)
+#         user = request.user
+
+#         if serializer.is_valid():
+#             # Save the meeting with organizer as the current user
+#             meeting = serializer.save(organizer=user.username)
+            
+#             # If the user is HR, add all teamleads to participants
+#             if user.user_type == "hr":
+#                 teamleads = CustomUser.objects.filter(user_type="teamlead")
+#                 meeting.participants.set(teamleads)
+            
+#             return Response(data=MeetingListSerializer(meeting).data)
+#         else:
+#             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+#     # def list(self,request,*args,**kwargs):
+#     #     qs=Meeting.objects.all()
+#     #     serializer=MeetingListSerializer(qs,many=True)
+#     #     return Response(data=serializer.data)
+#     def list(self, request, *args, **kwargs):
+#     user = request.user
+
+#     # HR should only see:
+#     # 1. Meetings organized by themselves
+#     # 2. OR meetings where they are a participant
+#     qs = Meeting.objects.filter(models.Q(organizer=user.username) | models.Q(participants=user)).distinct()
+
+#     serializer = MeetingListSerializer(qs, many=True)
+#     return Response(data=serializer.data)
+#     def retrieve(self,request,*args,**kwargs):
+#         id=kwargs.get("pk")
+#         qs=Meeting.objects.get(id=id)
+#         serializer=MeetingListSerializer(qs)
+#         return Response(data=serializer.data)
+    
+#     def destroy(self, request, *args, **kwargs):
+#         id = kwargs.get("pk")
+#         try:
+#             instance =Meeting.objects.get(id=id)
+#             instance.delete()
+#             return Response({"msg": "Meeting removed"})
+#         except Employee.DoesNotExist:
+#             return Response({"msg": "Meeting not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+
+class MeetingView(ViewSet):
+    authentication_classes = [authentication.TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        serializer = MeetingSerializer(data=request.data)
+        user = request.user
+
         if serializer.is_valid():
-            serializer.save(organizer=user_id)
-            return Response(data=serializer.data)
+            meeting = serializer.save(organizer=user.username)
+
+            if user.user_type == "hr":
+                teamleads = CustomUser.objects.filter(user_type="teamlead")
+                meeting.participants.set(teamleads)
+
+            return Response(data=MeetingListSerializer(meeting).data)
         else:
             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    def list(self,request,*args,**kwargs):
-        qs=Meeting.objects.all()
-        serializer=MeetingListSerializer(qs,many=True)
+
+    def list(self, request, *args, **kwargs):
+        user = request.user
+
+        # HR should only see:
+        # 1. Meetings organized by themselves
+        # 2. OR meetings where they are a participant
+        qs = Meeting.objects.filter(
+            models.Q(organizer=user.username) | models.Q(participants=user)
+        ).distinct()
+
+        serializer = MeetingListSerializer(qs, many=True)
         return Response(data=serializer.data)
-    
-    def retrieve(self,request,*args,**kwargs):
-        id=kwargs.get("pk")
-        qs=Meeting.objects.get(id=id)
-        serializer=MeetingListSerializer(qs)
+
+    def retrieve(self, request, *args, **kwargs):
+        id = kwargs.get("pk")
+        qs = Meeting.objects.get(id=id)
+        serializer = MeetingListSerializer(qs)
         return Response(data=serializer.data)
-    
+
     def destroy(self, request, *args, **kwargs):
         id = kwargs.get("pk")
         try:
-            instance =Meeting.objects.get(id=id)
+            instance = Meeting.objects.get(id=id)
             instance.delete()
             return Response({"msg": "Meeting removed"})
         except Employee.DoesNotExist:

@@ -16,29 +16,14 @@ from hrapi.models import *
 from teamleadapi.serializer import *
 
 
-# class TeamleadCreateView(APIView):
-#     def post(self,request,*args,**kwargs):
-#         serializer=RegistrationSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save(user_type="teamlead")
-#             return Response(data=serializer.data)
-#         else:
-#             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-from rest_framework.permissions import AllowAny
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-
 class TeamleadCreateView(APIView):
-    permission_classes = [AllowAny]  # 👈 Required to bypass authentication
-
-    def post(self, request, *args, **kwargs):
-        serializer = RegistrationSerializer(data=request.data)
+    def post(self,request,*args,**kwargs):
+        serializer=RegistrationSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user_type="teamlead")
-            return Response(data=serializer.data, status=status.HTTP_201_CREATED)
-        return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(data=serializer.data)
+        else:
+            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
  
  
 class CustomAuthToken(ObtainAuthToken):
@@ -338,15 +323,38 @@ class MeetingView(ViewSet):
     authentication_classes=[authentication.TokenAuthentication]
     permission_classes=[permissions.IsAuthenticated]
     
-    def create(self,request,*args,**kwargs):
-        serializer=MeetingSerializer(data=request.data)
-        user_id=request.user.username
+    # def create(self,request,*args,**kwargs):
+    #     serializer=MeetingSerializer(data=request.data)
+    #     user_id=request.user.username
+    #     if serializer.is_valid():
+    #         serializer.save(organizer=user_id)
+    #         return Response(data=serializer.data)
+    #     else:
+    #         return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def create(self, request, *args, **kwargs):
+        serializer = MeetingSerializer(data=request.data)
+        user = request.user
+        username = user.username
+
         if serializer.is_valid():
-            serializer.save(organizer=user_id)
-            return Response(data=serializer.data)
+            # Save the meeting with the organizer
+            meeting = serializer.save(organizer=username)
+
+            # If the user is a TeamLead, add team members (employees) as participants
+            if user.user_type == "teamlead":
+                try:
+                    team = Teams.objects.get(teamlead=user)
+                    employees = team.members.all()
+                    meeting.participants.set(employees)
+                except Teams.DoesNotExist:
+                    return Response({"error": "No team found for this TeamLead."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # If the user is admin or HR, you can implement other logic here (optional)
+
+            return Response(data=MeetingListSerializer(meeting).data)
         else:
             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+        
     def list(self,request,*args,**kwargs):
         qs=Meeting.objects.all()
         serializer=MeetingListSerializer(qs,many=True)

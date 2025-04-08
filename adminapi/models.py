@@ -12,7 +12,7 @@ class Attendance(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     date = models.DateField(auto_now_add=True)
-    login_time = models.TimeField(auto_now_add=True)
+    login_time = models.TimeField()
     status = models.CharField(max_length=10, choices=STATUS_CHOICES)
 
     def __str__(self):

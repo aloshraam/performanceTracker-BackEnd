@@ -37,6 +37,8 @@ from adminapi.serializer import *
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
 
+import pytz  # Add this import
+
 # CSRF Token View
 def get_csrf_token(request):
     return JsonResponse({'csrfToken': get_token(request)})
@@ -206,8 +208,7 @@ class TechnologiesView(ViewSet):
         except Employee.DoesNotExist:
             return Response({"msg": "TechnologiesList not found"}, status=status.HTTP_404_NOT_FOUND)
         
-
-
+        
 @method_decorator(csrf_exempt, name='dispatch')
 class CustomAuthToken1(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
@@ -215,18 +216,20 @@ class CustomAuthToken1(ObtainAuthToken):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
 
-        # Get real-time with timezone
-        now = timezone.now()  # This ensures correct timezone handling
-        login_time = now.time()  
-        late_time = time(9, 0)  # 9:00 AM
+        # Force time to Asia/Kolkata
+        ist = pytz.timezone('Asia/Kolkata')
+        now = timezone.now().astimezone(ist)
+
+        login_time = now.time()
+        late_time = time(9, 0)  # 9:00 AM IST
         status = "Late" if login_time > late_time else "Present"
 
         attendance, created = Attendance.objects.get_or_create(
-            user=user, date=now.date(),
-            defaults={"login_time": login_time, "status": status}
+            user=user,
+            date=now.date(),
+            defaults={'login_time': login_time, 'status': status}
         )
 
-        # Generate token
         token, created = Token.objects.get_or_create(user=user)
 
         return Response({
@@ -234,18 +237,12 @@ class CustomAuthToken1(ObtainAuthToken):
             'token': token.key,
             'user_type': user.user_type,
             'attendance_status': attendance.status,
-            'login_time': attendance.login_time.strftime("%H:%M:%S")
+            'login_time': now.strftime("%I:%M %p"),  # display nicely in IST
         })
-
-
 class AttendanceListView(APIView):
-    permission_classes = [IsAdminUser]  # Only Admin can access
+    permission_classes = [IsAdminUser]
 
     def get(self, request, *args, **kwargs):
         attendances = Attendance.objects.all().order_by('-date')
         serializer = AttendanceSerializer(attendances, many=True)
         return Response(serializer.data)
-    
-
-
-              

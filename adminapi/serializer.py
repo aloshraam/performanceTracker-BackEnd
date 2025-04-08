@@ -2,6 +2,9 @@ from rest_framework import serializers
 from hrapi.models import *
 from rest_framework import serializers
 from .models import Attendance
+from datetime import datetime
+import pytz
+
 
 
 
@@ -44,7 +47,18 @@ class TechnologiesSerializer(serializers.ModelSerializer):
 
 class AttendanceSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField()
+    login_time = serializers.SerializerMethodField()
 
     class Meta:
         model = Attendance
         fields = ["user", "date", "login_time", "status"]
+
+    def get_login_time(self, obj):
+        # Combine date and time to create a datetime object
+        if obj.login_time:
+            dt = datetime.combine(obj.date, obj.login_time)
+            # Convert to IST
+            ist = pytz.timezone('Asia/Kolkata')
+            dt_ist = ist.localize(dt)
+            return dt_ist.strftime("%I:%M %p")
+        return None

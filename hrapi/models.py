@@ -160,6 +160,7 @@ class Meeting(models.Model):
     date=models.DateField(null=True)
     time=models.TimeField(null=True)
     posted_at=models.DateTimeField(auto_now_add=True)
+    participants = models.ManyToManyField(CustomUser, related_name='meetings')
 
     
 class DailyTask(models.Model):
