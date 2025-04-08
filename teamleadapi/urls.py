@@ -28,5 +28,4 @@ urlpatterns = [
     path("profile/",views.profileView.as_view(),name="profile"),
     path("allemployee/",views.EmployeesAllView.as_view(),name="allemp"),
 
-
 ]  +router.urls
