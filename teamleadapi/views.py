@@ -92,31 +92,49 @@ class EmployeesView(ViewSet):
             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         
+# class DailyTaskView(ViewSet):
+#     authentication_classes=[authentication.TokenAuthentication]
+#     permission_classes=[permissions.IsAuthenticated]
+    
+#     def list(self,request,*args,**kwargs):
+#         qs=DailyTask.objects.all()
+#         serializer=DailyTaskSerializer(qs,many=True)
+#         return Response(data=serializer.data)
+    
+#     def retrieve(self,request,*args,**kwargs):
+#         id=kwargs.get("pk")
+#         qs=DailyTask.objects.get(id=id)
+#         serializer=DailyTaskSerializer(qs)
+#         return Response(data=serializer.data)
+    
+#     def destroy(self, request, *args, **kwargs):
+#         id = kwargs.get("pk")
+#         try:
+#             instance =DailyTask.objects.get(id=id)
+#             instance.delete()
+#             return Response({"msg": "Task removed"})
+#         except Employee.DoesNotExist:
+#             return Response({"msg": "Task not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+from rest_framework.response import Response
+from rest_framework import viewsets, status
+from hrapi.models import DailyTask
+from .serializer import DailyTaskSerializer
+
 class DailyTaskView(ViewSet):
-    authentication_classes=[authentication.TokenAuthentication]
-    permission_classes=[permissions.IsAuthenticated]
-    
-    def list(self,request,*args,**kwargs):
-        qs=DailyTask.objects.all()
-        serializer=DailyTaskSerializer(qs,many=True)
-        return Response(data=serializer.data)
-    
-    def retrieve(self,request,*args,**kwargs):
-        id=kwargs.get("pk")
-        qs=DailyTask.objects.get(id=id)
-        serializer=DailyTaskSerializer(qs)
-        return Response(data=serializer.data)
-    
-    def destroy(self, request, *args, **kwargs):
-        id = kwargs.get("pk")
-        try:
-            instance =DailyTask.objects.get(id=id)
-            instance.delete()
-            return Response({"msg": "Task removed"})
-        except Employee.DoesNotExist:
-            return Response({"msg": "Task not found"}, status=status.HTTP_404_NOT_FOUND)
-    
-    
+    authentication_classes = [authentication.TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request, *args, **kwargs):
+        employee_id = request.query_params.get("employee_id")
+        
+        if employee_id:
+            qs = DailyTask.objects.filter(emp__id=employee_id)
+        else:
+            qs = DailyTask.objects.all()
+        
+        serializer = DailyTaskSerializer(qs, many=True)
+        return Response(data=serializer.data)    
     
     
 class TeamView(ViewSet):

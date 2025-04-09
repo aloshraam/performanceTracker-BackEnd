@@ -130,12 +130,20 @@ class MeetingListSerializer(serializers.ModelSerializer):
         fields="__all__"  
         
         
+# class DailyTaskSerializer(serializers.ModelSerializer):
+#     teamlead=serializers.CharField(read_only=True)
+#     emp=serializers.CharField(read_only=True)
+#     class Meta:
+#         model=DailyTask
+#         fields="__all__"
+from hrapi.serializer import EmployeeMiniSerializer,TeamLeadMiniSerializer        
 class DailyTaskSerializer(serializers.ModelSerializer):
-    teamlead=serializers.CharField(read_only=True)
-    emp=serializers.CharField(read_only=True)
+    emp = EmployeeMiniSerializer(read_only=True)
+    teamlead = TeamLeadMiniSerializer(read_only=True)
+
     class Meta:
-        model=DailyTask
-        fields="__all__"
+        model = DailyTask
+        fields = ['id', 'task', 'emp', 'teamlead', 'file', 'is_completed', 'due_date']
         
 
 class RatingSerializer(serializers.ModelSerializer):

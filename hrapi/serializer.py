@@ -131,3 +131,17 @@ class PerformanceTrackSerializer2(serializers.ModelSerializer):
     class Meta:
         model=Performance_assign
         fields=["teamlead","performance","teamlead",]
+
+# serializers.py
+from rest_framework import serializers
+from .models import DailyTask, Employee, TeamLead
+
+class EmployeeMiniSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Employee
+        fields = ['id', 'name']
+
+class TeamLeadMiniSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TeamLead
+        fields = ['id', 'name']
