@@ -16,9 +16,13 @@ from hrapi.models import *
 from teamleadapi.serializer import *
 
 
+from rest_framework.permissions import AllowAny
+
 class TeamleadCreateView(APIView):
-    def post(self,request,*args,**kwargs):
-        serializer=RegistrationSerializer(data=request.data)
+    permission_classes = [AllowAny]  # 👈 This lets anyone register
+
+    def post(self, request, *args, **kwargs):
+        serializer = RegistrationSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user_type="teamlead")
             return Response(data=serializer.data)
