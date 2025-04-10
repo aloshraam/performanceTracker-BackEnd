@@ -26,12 +26,14 @@ class ProjectSerializer(serializers.ModelSerializer):
         
         
 class ProjectAssignSerializer(serializers.ModelSerializer):
-    project=serializers.CharField(read_only=True)
-    teamlead=serializers.CharField(read_only=True)
-    team=serializers.CharField(read_only=True)
+    project = serializers.CharField(read_only=True)
+    teamlead = serializers.CharField(read_only=True)
+    team = serializers.CharField(read_only=True)
+    status = serializers.CharField(read_only=True)  # 👈 ADD THIS
+
     class Meta:
-        model=Project_assign
-        fields="__all__"
+        model = Project_assign
+        fields = "__all__"
         
 class ProjectDetailSerializer(serializers.ModelSerializer):
     projectassigned=serializers.CharField(read_only=True)

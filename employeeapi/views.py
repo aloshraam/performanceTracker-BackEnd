@@ -219,7 +219,42 @@ class TaskChartView(ViewSet):
             return Response(data=serializer.data)
         else:
             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
+        
+    # 🆕 Add this new function to mark a task as completed
+    # @action(methods=["post"], detail=True)
+    # def mark_complete(self, request, *args, **kwargs):
+    #     try:
+    #         task_id = kwargs.get("pk")
+    #         task = TaskChart.objects.get(id=task_id)
 
+    #         task.stage = "completed"
+    #         task.description = "completed"
+    #         task.save()
+
+    #         return Response({"msg": "Task marked as completed"}, status=status.HTTP_200_OK)
+
+    #     except TaskChart.DoesNotExist:
+    #         return Response({"error": "Task not found"}, status=status.HTTP_404_NOT_FOUND)
+    @action(methods=["post"], detail=True)
+    def mark_complete(self, request, *args, **kwargs):
+        try:
+            task_id = kwargs.get("pk")
+            task = TaskChart.objects.get(id=task_id)
+
+            # ✅ Mark TaskChart as completed
+            task.stage = "completed"
+            task.description = "completed"
+            task.save()
+
+            # ✅ Mark related ProjectDetail as completed
+            project_detail = task.project_detail
+            project_detail.status = "completed"
+            project_detail.save()
+
+            return Response({"msg": "Task and project detail marked as completed"}, status=status.HTTP_200_OK)
+
+        except TaskChart.DoesNotExist:
+            return Response({"error": "Task not found"}, status=status.HTTP_404_NOT_FOUND)
     
 class TaskUpdatesView(ViewSet):
     authentication_classes=[authentication.TokenAuthentication]

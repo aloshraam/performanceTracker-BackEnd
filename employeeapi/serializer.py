@@ -66,17 +66,33 @@ class ProjectUpdatesSerializer(serializers.ModelSerializer):
         fields="__all__"     
         
 
-class TaskChartSerializer(serializers.ModelSerializer):
-    project_detail=serializers.CharField(read_only=True)
-    assigned_person=serializers.CharField(read_only=True)
-    start_date=serializers.CharField(read_only=True)
-    end_date=serializers.CharField(read_only=True)
-    total_days=serializers.CharField(read_only=True)
+# class TaskChartSerializer(serializers.ModelSerializer):
+#     project_detail=serializers.CharField(read_only=True)
+#     assigned_person=serializers.CharField(read_only=True)
+#     start_date=serializers.CharField(read_only=True)
+#     end_date=serializers.CharField(read_only=True)
+#     total_days=serializers.CharField(read_only=True)
+#     class Meta:
+#         model=TaskChart
+#         fields="__all__"
+class ProjectDetailMiniSerializer(serializers.ModelSerializer):
     class Meta:
-        model=TaskChart
-        fields="__all__"
+        model = ProjectDetail
+        fields = ['id', 'assigned_part', 'status']
+class TaskChartSerializer(serializers.ModelSerializer):
+    project_detail = ProjectDetailMiniSerializer(read_only=True)
+    assigned_person = serializers.CharField(read_only=True)
+    start_date = serializers.CharField(read_only=True)
+    end_date = serializers.CharField(read_only=True)
+    total_days = serializers.CharField(read_only=True)
 
-        
+    class Meta:
+        model = TaskChart
+        fields = "__all__"
+
+# employeeapi/serializers.py
+
+  # Add more fields if needed
 class TaskUpdateChartSerializer(serializers.ModelSerializer):
     task=serializers.CharField(read_only=True)
     updated_by=serializers.CharField(read_only=True)    

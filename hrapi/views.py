@@ -262,7 +262,6 @@ class TaskChartView(ViewSet):
         data['task_updates_chart_list'] = task_updates_chart_serializer.data
         return Response(data)
     
-    
 # class TaskUpdatesChartView(ViewSet):
 #     authentication_classes=[authentication.TokenAuthentication]
 #     permission_classes=[permissions.IsAuthenticated]

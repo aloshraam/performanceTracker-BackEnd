@@ -96,16 +96,19 @@ class ProjectUpdates(models.Model):
     project=models.ForeignKey(Projects,on_delete=models.CASCADE)
     description=models.CharField(max_length=200)
 
-
 class Project_assign(models.Model):
-    project=models.OneToOneField(Projects,on_delete=models.CASCADE,unique=True)
-    teamlead=models.ForeignKey(TeamLead,on_delete=models.CASCADE)
-    team=models.ForeignKey(Teams,on_delete=models.CASCADE)
-    
-    
+    project = models.OneToOneField(Projects, on_delete=models.CASCADE, unique=True)
+    teamlead = models.ForeignKey(TeamLead, on_delete=models.CASCADE)
+    team = models.ForeignKey(Teams, on_delete=models.CASCADE)
+
+    STATUS_CHOICES = [
+        ("pending", "pending"),
+        ("completed", "completed"),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")  # 👈 ADD THIS
+
     def __str__(self):
-        return self.project.topic 
-    
+        return self.project.topic
 
 
 class ProjectDetail(models.Model):
