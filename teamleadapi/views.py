@@ -141,21 +141,34 @@ class DailyTaskView(ViewSet):
         return Response(data=serializer.data)    
     
     
+
 class TeamView(ViewSet):
-    authentication_classes=[authentication.TokenAuthentication]
-    permission_classes=[permissions.IsAuthenticated]
-    
+    authentication_classes = [authentication.TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
     def create(self, request, *args, **kwargs):
         serializer = TeamSerializer(data=request.data)
         teamlead_id = request.user.id
         teamlead_obj = TeamLead.objects.get(id=teamlead_id)
-        
+
+        # ✅ Check if the teamlead already has a team
+        if Teams.objects.filter(teamlead=teamlead_obj).exists():
+            return Response(
+                data={"error": "This teamlead already has a team."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         if serializer.is_valid():
             employee_ids = request.data.get('members', [])
+            # ✅ Check if selected employees are already in another team
             employees_already_in_team = Employee.objects.filter(id__in=employee_ids, in_team=True)
             if employees_already_in_team.exists():
-                error_msg="selected employees are already part of a team and cannot be added to yours."
-                return Response(data={"error": error_msg}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    data={"error": "Selected employees are already part of a team and cannot be added to yours."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # ✅ Save the team
             team = serializer.save(teamlead=teamlead_obj)
             employees_added_to_team = team.members.all()
             employees_added_to_team.update(in_team=True)
@@ -163,9 +176,7 @@ class TeamView(ViewSet):
             return Response(data=serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    
-    
+
     def list(self, request, *args, **kwargs):
         teamlead_id = request.user.id
         teamlead_obj = TeamLead.objects.get(id=teamlead_id)
@@ -173,17 +184,15 @@ class TeamView(ViewSet):
             team = Teams.objects.get(teamlead=teamlead_obj)
         except Teams.DoesNotExist:
             return Response(data={"message": "Team not found for this team lead."}, status=status.HTTP_404_NOT_FOUND)
+        
         serializer = TeamsViewSerializer(team)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
-    
-    
-    
-    def retrieve(self,request,*args,**kwargs):
-        id=kwargs.get("pk")
-        qs=Teams.objects.get(id=id)
-        serializer=TeamsViewSerializer(qs)
+
+    def retrieve(self, request, *args, **kwargs):
+        id = kwargs.get("pk")
+        qs = Teams.objects.get(id=id)
+        serializer = TeamsViewSerializer(qs)
         return Response(data=serializer.data)
-    
     
 class ProjectView(ViewSet):
     authentication_classes=[authentication.TokenAuthentication]
