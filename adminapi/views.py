@@ -7,37 +7,17 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet,ViewSet
 from rest_framework import status
 from rest_framework.decorators import action
-
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
-
-# 
-from django.utils import timezone
-from rest_framework.authtoken.views import ObtainAuthToken
-from rest_framework.response import Response
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
-from datetime import time
-from rest_framework.authtoken.models import Token
-from .models import Attendance
-
-
-    
-from rest_framework.views import APIView
-from rest_framework.response import Response
+from datetime import time    
 from rest_framework.permissions import IsAdminUser
-from .models import Attendance
-from .serializer import AttendanceSerializer
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-
 from hrapi.models import *
 from adminapi.serializer import *
-
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
-
-import pytz  # Add this import
+import pytz
 
 # CSRF Token View
 def get_csrf_token(request):
@@ -208,26 +188,35 @@ class TechnologiesView(ViewSet):
         except Employee.DoesNotExist:
             return Response({"msg": "TechnologiesList not found"}, status=status.HTTP_404_NOT_FOUND)
         
-        
-@method_decorator(csrf_exempt, name='dispatch')
 class CustomAuthToken1(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
+        user_type = user.user_type
+        is_approved = True
 
-        # Force time to Asia/Kolkata
+        # Check admin approval based on user type
+        if user_type == "hr":
+            is_approved = Hr.objects.get(id=user.id).is_adminapproved
+        elif user_type == "teamlead":
+            is_approved = TeamLead.objects.get(id=user.id).is_adminapproved
+        elif user_type == "employee":
+            is_approved = Employee.objects.get(id=user.id).is_adminapproved
+
+        if not is_approved:
+            return Response({"msg": "Admin approval pending"}, status=status.HTTP_403_FORBIDDEN)
+
         ist = pytz.timezone('Asia/Kolkata')
         now = timezone.now().astimezone(ist)
-
         login_time = now.time()
-        late_time = time(9, 0)  # 9:00 AM IST
-        status = "Late" if login_time > late_time else "Present"
+        late_time = time(9, 0)
+        attendance_status = "Late" if login_time > late_time else "Present"
 
-        attendance, created = Attendance.objects.get_or_create(
+        Attendance.objects.get_or_create(
             user=user,
             date=now.date(),
-            defaults={'login_time': login_time, 'status': status}
+            defaults={"login_time": login_time, "status": attendance_status}
         )
 
         token, created = Token.objects.get_or_create(user=user)
@@ -235,10 +224,11 @@ class CustomAuthToken1(ObtainAuthToken):
         return Response({
             'id': user.id,
             'token': token.key,
-            'user_type': user.user_type,
-            'attendance_status': attendance.status,
-            'login_time': now.strftime("%I:%M %p"),  # display nicely in IST
+            'user_type': user_type,
+            'attendance_status': attendance_status,
+            'login_time': now.strftime("%I:%M %p"),
         })
+
 class AttendanceListView(APIView):
     permission_classes = [IsAdminUser]
 
