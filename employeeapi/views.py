@@ -266,30 +266,13 @@ class TaskUpdatesView(ViewSet):
         serializer=TaskUpdateChartSerializer(qs,many=True)
         return Response(data=serializer.data)   
     
-    
-# class MyMeetingsView(ViewSet):
-#     authentication_classes=[authentication.TokenAuthentication]
-#     permission_classes=[permissions.IsAuthenticated]
-
-    
-#     def list(self,request,*args,**kwargs):
-#         qs=Meeting.objects.all()
-#         serializer=MeetingListSerializer(qs,many=True)
-#         return Response(data=serializer.data)
-    
-#     def retrieve(self,request,*args,**kwargs):
-#         id=kwargs.get("pk")
-#         qs=Meeting.objects.get(id=id)
-#         serializer=MeetingListSerializer(qs)
-#         return Response(data=serializer.data)
-    
 class MyMeetingsView(ViewSet):
     authentication_classes = [authentication.TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
     def list(self, request, *args, **kwargs):
         user = request.user
-        
+
         # Make sure this view is only used by employees
         if user.user_type != "employee":
             return Response({"error": "Only employees can access this view"}, status=status.HTTP_403_FORBIDDEN)
@@ -299,12 +282,9 @@ class MyMeetingsView(ViewSet):
             team = Teams.objects.get(members=user)
             teamlead_username = team.teamlead.username
         except Teams.DoesNotExist:
-            teamlead_username = None
+            return Response({"error": "Team not found for this employee"}, status=status.HTTP_404_NOT_FOUND)
 
-        # Filter meetings organized by the employee's teamlead or admin
-        qs = Meeting.objects.filter(
-            models.Q(organizer=teamlead_username) | models.Q(organizer="admin")
-        )
+        qs = Meeting.objects.filter(organizer=teamlead_username)
 
         serializer = MeetingListSerializer(qs, many=True)
         return Response(data=serializer.data)

@@ -94,36 +94,6 @@ class EmployeesView(ViewSet):
             return Response(data=serializer.data)
         else:
             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-        
-# class DailyTaskView(ViewSet):
-#     authentication_classes=[authentication.TokenAuthentication]
-#     permission_classes=[permissions.IsAuthenticated]
-    
-#     def list(self,request,*args,**kwargs):
-#         qs=DailyTask.objects.all()
-#         serializer=DailyTaskSerializer(qs,many=True)
-#         return Response(data=serializer.data)
-    
-#     def retrieve(self,request,*args,**kwargs):
-#         id=kwargs.get("pk")
-#         qs=DailyTask.objects.get(id=id)
-#         serializer=DailyTaskSerializer(qs)
-#         return Response(data=serializer.data)
-    
-#     def destroy(self, request, *args, **kwargs):
-#         id = kwargs.get("pk")
-#         try:
-#             instance =DailyTask.objects.get(id=id)
-#             instance.delete()
-#             return Response({"msg": "Task removed"})
-#         except Employee.DoesNotExist:
-#             return Response({"msg": "Task not found"}, status=status.HTTP_404_NOT_FOUND)
-    
-from rest_framework.response import Response
-from rest_framework import viewsets, status
-from hrapi.models import DailyTask
-from .serializer import DailyTaskSerializer
 
 class DailyTaskView(ViewSet):
     authentication_classes = [authentication.TokenAuthentication]
@@ -276,20 +246,6 @@ class AssignedProjectView(ViewSet):
         else:
             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        
-        
-    # @action(methods=["post"],detail=True)
-    # def project_completed(self, request, *args, **kwargs):
-    #     assignedproject_id = kwargs.get("pk")
-    #     link=request.data.get('link')
-    #     try:
-    #         assignproject_obj = Project_assign.objects.get(id=assignedproject_id)
-    #     except Project_assign.DoesNotExist:
-    #         return Response({"message": "project not found"}, status=status.HTTP_404_NOT_FOUND)
-    #     assignproject_obj.project.project_status = "completed"
-    #     assignproject_obj.project.link = link
-    #     assignproject_obj.project.save()
-    #     return Response({"message": "project completed marked success"}, status=status.HTTP_200_OK)
        
     @action(methods=["post"], detail=True)
     def project_completed(self, request, *args, **kwargs):
@@ -352,36 +308,10 @@ class TaskChartView(ViewSet):
         data['task_updates_chart_list'] = task_updates_chart_serializer.data
         return Response(data)
     
-    
-# class TaskUpdatesChartView(ViewSet):
-#     authentication_classes=[authentication.TokenAuthentication]
-#     permission_classes=[permissions.IsAuthenticated]
-    
-#     def list(self,request,*args,**kwargs):
-#         qs=TaskUpdateChart.objects.all()
-#         serializer=TaskUpdatesChartSerializer(qs,many=True)
-#         return Response(data=serializer.data)
-    
-#     def retrieve(self,request,*args,**kwargs):
-#         id=kwargs.get("pk")
-#         qs=TaskUpdateChart.objects.get(id=id)
-#         serializer=TaskUpdatesChartSerializer(qs)
-#         return Response(data=serializer.data)
-    
-    
-    
 class MeetingView(ViewSet):
     authentication_classes=[authentication.TokenAuthentication]
     permission_classes=[permissions.IsAuthenticated]
     
-    # def create(self,request,*args,**kwargs):
-    #     serializer=MeetingSerializer(data=request.data)
-    #     user_id=request.user.username
-    #     if serializer.is_valid():
-    #         serializer.save(organizer=user_id)
-    #         return Response(data=serializer.data)
-    #     else:
-    #         return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     def create(self, request, *args, **kwargs):
         serializer = MeetingSerializer(data=request.data)
         user = request.user
@@ -406,9 +336,9 @@ class MeetingView(ViewSet):
         else:
             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-    def list(self,request,*args,**kwargs):
-        qs=Meeting.objects.all()
-        serializer=MeetingListSerializer(qs,many=True)
+    def list(self, request, *args, **kwargs):
+        qs = Meeting.objects.exclude(organizer__in=CustomUser.objects.filter(is_superuser=True).values_list('username', flat=True))
+        serializer = MeetingListSerializer(qs, many=True)
         return Response(data=serializer.data)
     
     def retrieve(self,request,*args,**kwargs):

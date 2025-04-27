@@ -396,12 +396,17 @@ class MeetingView(ViewSet):
     def list(self, request, *args, **kwargs):
         user = request.user
 
-        # HR should only see:
-        # 1. Meetings organized by themselves
-        # 2. OR meetings where they are a participant
-        qs = Meeting.objects.filter(
-            models.Q(organizer=user.username) | models.Q(participants=user)
-        ).distinct()
+        if user.user_type == "hr":
+            qs = Meeting.objects.filter(
+                models.Q(organizer=user.username) |
+                models.Q(organizer="admin") |
+                models.Q(participants=user)
+            ).distinct()
+        else:
+            qs = Meeting.objects.filter(
+                models.Q(organizer=user.username) |
+                models.Q(participants=user)
+            ).distinct()
 
         serializer = MeetingListSerializer(qs, many=True)
         return Response(data=serializer.data)
